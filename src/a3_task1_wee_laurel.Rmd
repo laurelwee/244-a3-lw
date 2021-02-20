@@ -1,0 +1,56 @@
+---
+title: 'Task 1: Spatial data visualization of chloropleth'
+author: "Laurel Wee"
+date: "2/19/2021"
+output: 
+  html_document:
+    code_folding: hide
+  
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(lubridate)
+library(sf)
+library(tmap)
+```
+```{r, message=FALSE}
+# Read in the Oil Spill data
+incidents <- read_csv(here("data","Oil_Spill_Incident_Tracking.csv")) %>% 
+  clean_names() %>% 
+  mutate(incident_date = date(dateofinci))
+
+ca_counties <- read_sf(here("data","CA_counties","CA_counties.shp")) %>% 
+  clean_names() %>% 
+  select(name, aland) %>% 
+  rename(county_name = name, land_area = aland)
+
+
+#incidents %>% st_crs()
+#ca_counties %>% st_crs()
+#incidents <- st_transform(incidents, 3857)
+```
+
+```{r}
+# Make an interactive map
+ggplot(data = ca_counties)+
+  geom_sf(aes(fill = land_area), color = "white", size = 0.1)+
+  theme_minimal()+
+  scale_fill_gradientn(colors = c("tan","tan4","sienna4"))
+```
+
+
+
+
+
+
+
+### Data Citation
+
+
+Oil SPill Incident Tracking [ds394] Updated: 31-01-2020 Accessed on: 19-02-2021
+
+https://gis.data.ca.gov/datasets/7464e3d6f4924b50ad06e5a553d71086_0/data 
