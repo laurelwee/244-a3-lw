@@ -1,0 +1,18 @@
+---
+title: 'Task 2: Working with raster data'
+author: "Laurel Wee"
+date: "2/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+```
+
+```{r}
+# Read in data
+
+```
+
