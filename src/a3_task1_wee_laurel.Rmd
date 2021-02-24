@@ -16,12 +16,17 @@ library(janitor)
 library(lubridate)
 library(sf)
 library(tmap)
+library(spatstat)
+library(sfg)
 ```
 ```{r, message=FALSE}
 # Read in the Oil Spill data
-incidents <- read_csv(here("data","Oil_Spill_Incident_Tracking.csv")) %>% 
+incidents <- read_sf(here("data",layer = "Oil_Spill_Incident_Tracking_%5Bds394%5D.shp")) %>% 
   clean_names() %>% 
-  mutate(incident_date = date(dateofinci))
+  mutate(incident_date = date(dateofinci)) %>% 
+  select(localecoun) %>% 
+  mutate(county_name = localecoun)
+  
 
 ca_counties <- read_sf(here("data","CA_counties","CA_counties.shp")) %>% 
   clean_names() %>% 
@@ -29,22 +34,50 @@ ca_counties <- read_sf(here("data","CA_counties","CA_counties.shp")) %>%
   rename(county_name = name, land_area = aland)
 
 
-#incidents %>% st_crs()
-#ca_counties %>% st_crs()
-#incidents <- st_transform(incidents, 3857)
+
+
+
+ca_counties <- st_transform(ca_counties, 3857)
+st_crs(incidents)
+st_crs(ca_counties)
 ```
+
 
 ```{r}
-# Make an interactive map
-ggplot(data = ca_counties)+
-  geom_sf(aes(fill = land_area), color = "white", size = 0.1)+
-  theme_minimal()+
-  scale_fill_gradientn(colors = c("tan","tan4","sienna4"))
+# Set the viewing mode to "interactive":
+tmap_mode(mode = "view")
+
+# Then make a map (with the polygon fill color updated by variable 'land_area', updating the color palette to "BuGn"), then add another shape layer for the sesbania records (added as dots):
+tm_shape(ca_counties) +
+  tm_fill("county_name", palette = "BuGn", title =" ") +
+  tm_shape(incidents) +
+  tm_dots()
 ```
 
 
+```{r}
+# Make an static map
+# see lab 7 part 3 
+#incidents_sp <- as(incidents, "Spatial")
+#proj4string(incidents_sp) <- "+proj=utm +zone=10 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0"
+
+```
+```{r}
+ca_incidents <- ca_counties %>% 
+  st_join(incidents)
+
+incident_counts <- ca_incidents %>% 
+  count(county_name)
+```
 
 
+```{r}
+ggplot(data = ca_counties)+
+  geom_sf(aes(fill = land_area), color = "white", size = 0.1)+
+  scale_fill_gradientn(colors = c("tan","tan4","sienna4"))+
+  geom_sf(data = incidents, color = "black", size = .8)+
+  theme_minimal()
+```
 
 
 
