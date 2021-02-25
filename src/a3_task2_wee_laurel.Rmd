@@ -13,12 +13,47 @@ library(tidyverse)
 library(here)
 library(sf)
 library(fasterize)
+library(rnaturalearth)
 ```
 
 ```{r}
 # Read in data
 ca_cetaceans <- list.files(path = here("data", "ca_cetaceans"), pattern = "*.tif", full.names = TRUE)
 
-cetaceans_data <- stack(ca_cetaceans)
+cetaceans_stack <- stack(ca_cetaceans)
 ```
+```{r}
+cetaceans_present<- function(x, thresh = 0.6){
+  y<-ifelse(x>=thresh, 1, 0)
+  return(y)
+}
+
+cetaceans_richness <- calc(cetaceans_stack, fun = cetaceans_present)
+
+cetaceans_richness_sum <- calc(cetaceans_richness, fun = sum, na.rm = TRUE)
+
+cetaceans_df <- rasterToPoints(cetaceans_richness_sum) %>% 
+  as.data.frame() 
+#%>% pivot_longer(cols = (3:37) , names_to = "species", values_to = "present")
+```
+
+```{r}
+map_natearth <- ne_download(scale = 'large', 
+                         type = 'land',
+                         category = 'physical',
+                         returnclass = c("sf"))
+
+ggplot() +
+  geom_raster()+
+geom_raster(data = cetaceans_df, aes(x=x,y=y, fill = layer)) +
+   geom_sf(data = map_natearth, color = 'skyblue4', fill = 'wheat3') +
+  coord_sf(xlim = c(-125,-115), ylim = c(32,38)) +
+  scale_fill_gradient(low = 'white', high = 'red4') +
+  theme_void() +
+  theme(panel.background = element_rect(fill = 'lightblue1'))
+
+```
+
+
+
 
