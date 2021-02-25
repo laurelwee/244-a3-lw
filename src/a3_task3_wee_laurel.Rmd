@@ -75,4 +75,53 @@ top_100 <- kvothe_tokens %>%
   filter(word != "patrick" & word != "rothfuss") %>% 
   slice(1:100)
 ```
+### Sentiment analysis with afinn: 
 
+First, bind words in `hobbit_nonstop_words` to `afinn` lexicon:
+```{r}
+kvothe_afinn <- kvothe_nonstop_words %>% 
+  inner_join(get_sentiments("afinn"))
+```
+
+Let's find some counts (by sentiment ranking):
+```{r}
+afinn_counts <-kvothe_afinn %>% 
+  count(no, value)
+
+# Plot them: 
+ggplot(data = afinn_counts, aes(x = value, y = n)) +
+  geom_col() +
+  facet_wrap(~no)
+
+# Find the mean afinn score by chapter: 
+afinn_means <- kvothe_afinn %>% 
+  group_by(no) %>% 
+  summarize(mean_afinn = mean(value))
+
+ggplot(data = afinn_means, 
+       aes(x = fct_rev(as.factor(chapter)), 
+           y = mean_afinn)) +
+  geom_col() +
+  coord_flip()
+```
+
+### Now with NRC lexicon
+
+Recall, this assigns words to sentiment bins. Let's bind our hobbit data to the NRC lexicon: 
+
+```{r}
+kvothe_nrc <- kvothe_nonstop_words %>% 
+  inner_join(get_sentiments("nrc"))
+```
+Let's find the count of words by chapter and sentiment bin: 
+
+```{r}
+kvothe_nrc_counts <- kvothe_nrc %>% 
+  count(no, sentiment)
+
+
+ggplot(data = kvothe_nrc_counts, aes(x = sentiment, y = n)) +
+  geom_col() +
+  facet_wrap(~chapter) +
+  coord_flip()
+```

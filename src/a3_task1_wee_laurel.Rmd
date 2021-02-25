@@ -17,66 +17,65 @@ library(lubridate)
 library(sf)
 library(tmap)
 library(spatstat)
-library(sfg)
 ```
+
 ```{r, message=FALSE}
 # Read in the Oil Spill data
 incidents <- read_sf(here("data",layer = "Oil_Spill_Incident_Tracking_%5Bds394%5D.shp")) %>% 
   clean_names() %>% 
   mutate(incident_date = date(dateofinci)) %>% 
-  select(localecoun) %>% 
-  mutate(county_name = localecoun)
+  rename(county_name = localecoun) # Rename county name column to be consistent with the other dataset
   
 
+# Read in California counties data
 ca_counties <- read_sf(here("data","CA_counties","CA_counties.shp")) %>% 
   clean_names() %>% 
   select(name, aland) %>% 
-  rename(county_name = name, land_area = aland)
+  rename(county_name = name, land_area = aland) # Rename county name column to be consistent with the other dataset
 
+# Check crs for the datasets 
+#st_crs(ca_counties) # `ca_counties` was loaded in as 4326
+#st_crs(incidents) # `incidents` was loaded in as 3857
+ca_counties <- st_transform(ca_counties, 3857) # transform so the datasets are the same, this is important for the `st_join()` later. I chose 3857 because  in is a projected coordinated system that is widely used. 4326 is a geographic coordinate system
 
-
-
-
-ca_counties <- st_transform(ca_counties, 3857)
-st_crs(incidents)
-st_crs(ca_counties)
+#st_crs(ca_counties) # Check crs to ensure the `st_transform()` worked
 ```
 
 
-```{r}
-# Set the viewing mode to "interactive":
+```{r interactive_incident_map, fig.cap= " **Figure 1:**"}
+# Make and interactive map to show the locations of oil spill events
+# Set the viewing mode to `interactive`/"view":
 tmap_mode(mode = "view")
 
-# Then make a map (with the polygon fill color updated by variable 'land_area', updating the color palette to "BuGn"), then add another shape layer for the sesbania records (added as dots):
+# Make a map with the fill color updated to variable 'county_name'
 tm_shape(ca_counties) +
   tm_fill("county_name", palette = "BuGn", title =" ") +
-  tm_shape(incidents) +
+  tm_shape(incidents) + # Add a layer for the oil spill indicents and have the events plotted as dots
   tm_dots()
 ```
 
 
-```{r}
+```{r chloropleth_plot, fig.cap= "**Figure 2:** "}
 # Make an static map
-# see lab 7 part 3 
-#incidents_sp <- as(incidents, "Spatial")
-#proj4string(incidents_sp) <- "+proj=utm +zone=10 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0"
+# note to self see lab 5
+incident_subset <- incidents %>% # Make a subset.. 
+  filter(inlandmari == "Inland") %>% # with only the mainland incidents ..
+  select(county_name) # and the county name.
+# Join the datasets so we can find the counts of incidents for each county in the next step
+ca_incidents <- ca_counties %>% # My R studio won't let me view this dataset
+  st_join(incident_subset) 
 
-```
-```{r}
-ca_incidents <- ca_counties %>% 
-  st_join(incidents)
+incident_counts <- ca_incidents %>% # Find the incident count for each county
+  count(county_name.x)
 
-incident_counts <- ca_incidents %>% 
-  count(county_name)
-```
-
-
-```{r}
-ggplot(data = ca_counties)+
-  geom_sf(aes(fill = land_area), color = "white", size = 0.1)+
-  scale_fill_gradientn(colors = c("tan","tan4","sienna4"))+
-  geom_sf(data = incidents, color = "black", size = .8)+
-  theme_minimal()
+# Make a chloropleth plot using the number of incidents as the fill color
+ggplot(data = incident_counts) +
+  geom_sf(aes(fill = n), color = "white", size = 0.1) +
+  scale_fill_gradientn(colors = c("lightgoldenrod1","orange","red")) +
+  theme(panel.background = element_rect(fill = "lightblue1",
+                                colour = "lightblue1",
+                                size = 0.5, linetype = "solid")) +
+  labs(title = "Oil Spills on the Mainland of the State of California", subtitle = "Events reported to CA EMA in 2008 (WEE)", fill = "Number of Oil Spills")
 ```
 
 
