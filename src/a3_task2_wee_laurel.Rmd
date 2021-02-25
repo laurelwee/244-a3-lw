@@ -3,16 +3,22 @@ title: 'Task 2: Working with raster data'
 author: "Laurel Wee"
 date: "2/19/2021"
 output: html_document
+  code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(raster)
 library(tidyverse)
 library(here)
+library(sf)
+library(fasterize)
 ```
 
 ```{r}
 # Read in data
+ca_cetaceans <- list.files(path = here("data", "ca_cetaceans"), pattern = "*.tif", full.names = TRUE)
 
+cetaceans_data <- stack(ca_cetaceans)
 ```
 

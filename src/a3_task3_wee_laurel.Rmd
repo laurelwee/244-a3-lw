@@ -4,6 +4,7 @@ subtitle: 'Name of the Wind by Patrick Rofus'
 author: "Laurel Wee"
 date: "2/24/2021"
 output: html_document
+  code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
