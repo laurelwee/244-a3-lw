@@ -1,5 +1,5 @@
 ---
-title: 'Task 1: Spatial data visualization of chloropleth'
+title: 'Task 1: Spatial Visualization of CA 2008 Oil Spills'
 author: "Laurel Wee"
 date: "2/19/2021"
 output: 
@@ -18,8 +18,9 @@ library(sf)
 library(tmap)
 library(spatstat)
 ```
-
-```{r, message=FALSE}
+### Overview
+Here we explore the oil spill incidents that were reported to California Emergency Management Agency in 2008. Many of the oil spill were reported in counties along the coast and the San Francisco Bay Area. Los Angeles county had the largest number of reports oil spill incidents. 
+```{r, message=FALSE, warning=FALSE}
 # Read in the Oil Spill data
 incidents <- read_sf(here("data",layer = "Oil_Spill_Incident_Tracking_%5Bds394%5D.shp")) %>% 
   clean_names() %>% 
@@ -41,8 +42,8 @@ ca_counties <- st_transform(ca_counties, 3857) # transform so the datasets are t
 #st_crs(ca_counties) # Check crs to ensure the `st_transform()` worked
 ```
 
-
-```{r interactive_incident_map, fig.cap= " **Figure 1:**"}
+#### Interactive Incident Map
+```{r interactive_incident_map, message=FALSE ,warning=FALSE}
 # Make and interactive map to show the locations of oil spill events
 # Set the viewing mode to `interactive`/"view":
 tmap_mode(mode = "view")
@@ -51,11 +52,13 @@ tmap_mode(mode = "view")
 tm_shape(ca_counties) +
   tm_fill("county_name", palette = "BuGn", title =" ") +
   tm_shape(incidents) + # Add a layer for the oil spill indicents and have the events plotted as dots
-  tm_dots()
+  tm_dots()+
+  labs(title = "Oil Spill Events")
 ```
+**Figure 1:** Individual oil spill events in the state of California in 2008. Data is from CA DFW Oil Spill Incident Tracking.
 
-
-```{r chloropleth_plot, fig.cap= "**Figure 2:** "}
+#### Static Chloropleth Map of Incidents by County
+```{r chloropleth_plot, fig.cap= "**Figure 2:** Mainland oil spill events shown for each California county in 2008. Data is from CA DFW Oil Spill Incident Tracking"}
 # Make an static map
 # note to self see lab 5
 incident_subset <- incidents %>% # Make a subset.. 
@@ -75,13 +78,12 @@ ggplot(data = incident_counts) +
   theme(panel.background = element_rect(fill = "lightblue1",
                                 colour = "lightblue1",
                                 size = 0.5, linetype = "solid")) +
-  labs(title = "Oil Spills on the Mainland of the State of California", subtitle = "Events reported to CA EMA in 2008 (WEE)", fill = "Number of Oil Spills")
+  labs(title = "Oil Spills on the Mainland of the State of California", subtitle = "Events reported to CA EMA in 2008 (WEE)", fill = "Number of Oil Spills", x="Latitude", y="Longitude")
 ```
 
 
 
 ### Data Citation
-
 
 Oil SPill Incident Tracking [ds394] Updated: 31-01-2020 Accessed on: 19-02-2021
 

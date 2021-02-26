@@ -3,8 +3,9 @@ title: 'A1 Task 3: Text wrangling and analysis'
 subtitle: 'Name of the Wind by Patrick Rofus'
 author: "Laurel Wee"
 date: "2/24/2021"
-output: html_document
-  code_folding: hide
+output: 
+  html_document:
+   code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -19,36 +20,35 @@ library(wordstonumbers)
 library(textclean)
 ```
 
-```{r, cache = TRUE}
+```{r, message= FALSE, cache = TRUE}
+# Read in pdf for analysis, choose an amazing book, such as 'Name of the Wind'
 kvothe_text <- pdf_text(here("data","the-name-of-the-wind.pdf"))
-```
 
-
-```{r}
+# Tidy the data and turn into a data frame, create column for the full text separated by page and line `/n`
 kvothe_tidy <- data.frame(kvothe_text) %>% 
   slice(-(1:16)) %>% 
   mutate(text_full = str_split(kvothe_text, pattern = '\\n')) %>% 
   unnest(text_full) %>% 
   mutate(text_full = str_trim(text_full)) 
-```
 
-```{r}
+# Turn the tidy data into parts that you wan to work with
 kvothe_df <- kvothe_tidy %>% 
   mutate(chapter = case_when(
-    str_detect(text_full, "CHAPTER") ~ text_full,
+    str_detect(text_full, "CHAPTER") ~ text_full, # Separated by Chapter
     TRUE ~ NA_character_
   )) %>% 
   fill(chapter) %>% 
-  separate(col = chapter, into = c("ch", "no"), sep = " ") %>% 
-  select(-kvothe_text) #%>% 
+  separate(col = chapter, into = c("ch", "no"), sep = " ")  #%>% 
+  #select(-kvothe_text) # this broke something
+#%>% # No longer need the full page text column
  # mgsub(no, replace_number(seq_len(1:92)))
-```
-```{r}
+
+# Tokenize the data and single out each word
 kvothe_tokens <- kvothe_df %>% 
   unnest_tokens(word, text_full)
 ```
-
-```{r}
+### Most frequently used words
+```{r, message=FALSE}
 kvothe_wordcount <- kvothe_tokens %>% 
   count(no, word) 
 
@@ -67,62 +67,50 @@ top_5_words <- kvothe_nostop_wordcount %>%
   #facet_wrap(~no, scales = "free") +
   #coord_flip()
 ```
-```{r}
+```{r, message=FALSE}
+# Count the most frequently used words and select the top ones, DO NOT include the authors name and "ing" 
 top_100 <- kvothe_tokens %>% 
   anti_join(stop_words) %>% 
   ungroup() %>% 
   count(word) %>% 
   arrange(-n) %>% 
-  filter(word != "patrick" & word != "rothfuss") %>% 
+  filter(word != "patrick" & word != "rothfuss" & word != "ing") %>% 
   slice(1:100)
-```
-### Sentiment analysis with afinn: 
 
-First, bind words in `hobbit_nonstop_words` to `afinn` lexicon:
-```{r}
-kvothe_afinn <- kvothe_nonstop_words %>% 
-  inner_join(get_sentiments("afinn"))
-```
-
-Let's find some counts (by sentiment ranking):
-```{r}
-afinn_counts <-kvothe_afinn %>% 
-  count(no, value)
-
-# Plot them: 
-ggplot(data = afinn_counts, aes(x = value, y = n)) +
-  geom_col() +
-  facet_wrap(~no)
-
-# Find the mean afinn score by chapter: 
-afinn_means <- kvothe_afinn %>% 
-  group_by(no) %>% 
-  summarize(mean_afinn = mean(value))
-
-ggplot(data = afinn_means, 
-       aes(x = fct_rev(as.factor(chapter)), 
-           y = mean_afinn)) +
-  geom_col() +
-  coord_flip()
+# Word cloud the most used words because I can't do a by chapter analysis yet
+name_wind_cloud <- ggplot(data = top_100, aes(label = word)) +
+  geom_text_wordcloud(aes(
+    color = n, 
+    size = n)) +
+  scale_size_area(max_size = 10) +
+  scale_color_gradientn(colors = c("turquoise","magenta","red")) +
+  theme_minimal()
+name_wind_cloud
 ```
 
-### Now with NRC lexicon
+#### Coder's comment:
+This word frequency analysis *Name of the Wind* by Patrick Rothfuss is book one of the King Killer Chronicles. It is a story of a young man, Kvothe, told by an old innkeeper who has lost touch with who he one was and is now called Kote. The most frequent words of this book accurately show the journey Kvothe goes on to look for who he is while dealing with trauma of his past and surviving alone in a world of magic and music.
 
-Recall, this assigns words to sentiment bins. Let's bind our hobbit data to the NRC lexicon: 
+### Sentiment analysis 
 
-```{r}
-kvothe_nrc <- kvothe_nonstop_words %>% 
+```{r, message=FALSE}
+kvothe_nrc <- kvothe_nostop_wordcount %>% 
   inner_join(get_sentiments("nrc"))
 ```
-Let's find the count of words by chapter and sentiment bin: 
 
 ```{r}
 kvothe_nrc_counts <- kvothe_nrc %>% 
-  count(no, sentiment)
-
+  count(sentiment)
 
 ggplot(data = kvothe_nrc_counts, aes(x = sentiment, y = n)) +
-  geom_col() +
-  facet_wrap(~chapter) +
-  coord_flip()
+  geom_col()+
+  coord_flip()+
+  labs(y="Counts", x="Sentiments", title = "Sentiments in The Name of the Wind")
+  
 ```
+
+#### Coder's comment:
+This book is an emotional rollercoast as you follow Kvothe is the highs and lows of his journeys. Through loss, love, life, failures and successes, *The Name of the Wind* will keep to reading to find out what happens next for this gifted adventurer.
+
+### Citation
+Rothfuss, P. (2007). The Name of the Wind.
